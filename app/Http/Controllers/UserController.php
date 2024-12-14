@@ -48,6 +48,41 @@ class UserController extends Controller
         }
     }
 
-    
+    public function show($id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
+
+            $authUser = Auth::user();
+            if ($authUser->id !== $user->id && $authUser->role !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view this user',
+                ], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully retrieved user',
+                'user' => $user,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching user', ['id' => $id, 'user' => Auth::user(), 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving the user.',
+            ], 500);
+        }
+    }
+
+
     
 }
