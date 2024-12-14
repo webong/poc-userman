@@ -126,6 +126,69 @@ class UserController extends Controller
         }
     }
 
+    public function update(Request $request, $id)
+    {
+        try {
+            if (!$id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User ID is required',
+                ], 422);
+            }
+
+            $user = User::find($id);
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
+
+            $authUser = Auth::user();
+            if ($authUser->id !== $user->id && $authUser->role !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to update this account',
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'name' => 'nullable|string|max:255',
+                'email' => 'nullable|email|max:255|unique:users,email,' . $id,
+                'password' => 'nullable|string|min:8',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation errors',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $data = $request->only(['name', 'email', 'password']);
+            if (isset($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
+
+            $user->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User account updated successfully',
+                'user' => $user,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating user: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating the user.',
+            ], 500);
+        }
+    }
+
 
     
 }
