@@ -83,6 +83,49 @@ class UserController extends Controller
         }
     }
 
+    public function delete($id)
+    {
+        try {
+            if (!$id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User ID is required',
+                ], 422);
+            }
+
+            $user = User::find($id);
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
+
+            $authUser = Auth::user();
+            if ($authUser->role !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to delete this account',
+                ], 403);
+            }
+
+            $user->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User account deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting user: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting the user.',
+            ], 500);
+        }
+    }
+
 
     
 }
